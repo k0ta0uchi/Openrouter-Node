@@ -24,6 +24,100 @@ class OpenrouterNode:
                     "multiline": False,
                     "default": ""
                 }),
+                "system_prompt": ("STRING", {
+                    "multiline": True,
+                    "default": "A world without prompts"
+                }),
+                "user_prompt": ("STRING", {
+                    "multiline": True,
+                    "default": "A world without prompts"
+                }),
+                "image_input": ("IMAGE", {
+                    "optional": True
+                }),
+                "temperature": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "step": 0.01,
+                    "round": 2
+                }),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = "get_completion"
+    CATEGORY = "OpenRouter"
+
+    def get_completion(self, base_url, model, api_key, system_prompt, user_prompt, temperature):
+        try:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+
+            # Initialize messages with proper structure
+            messages = [{
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_prompt
+                    }
+                ],
+                
+            },
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": user_prompt
+                    }
+                ],
+                
+            }]
+
+            body = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature
+            }
+
+            response = requests.post(base_url, headers=headers, data=json.dumps(body), timeout=120)
+            response.raise_for_status()
+
+            response_json = response.json()
+
+            if "choices" in response_json and len(response_json["choices"]) > 0:
+                assistant_message = response_json["choices"][0].get("message", {}).get("content", "")
+                return (assistant_message,)
+            else:
+                return ("No response from the model.",)
+
+        except requests.exceptions.RequestException as req_err:
+            return (f"Request Error: {str(req_err)}",)
+        except Exception as e:
+            return (f"Error: {str(e)}",)
+
+class OpenrouterNodeImage:
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "base_url": ("STRING", {
+                    "multiline": False,
+                    "default": "https://openrouter.ai/api/v1/chat/completions"
+                }),
+                "model": ("STRING", {
+                    "multiline": False,
+                    "default": "gpt4o"
+                }),
+                "api_key": ("STRING", {
+                    "multiline": False,
+                    "default": ""
+                }),
                 "prompt": ("STRING", {
                     "multiline": True,
                     "default": "A world without prompts"
@@ -127,9 +221,10 @@ class OpenrouterNode:
 
 # Node registration
 NODE_CLASS_MAPPINGS = {
-    "OpenrouterNode": OpenrouterNode
+    "OpenrouterNode": OpenrouterNode,
+    "OpenrouterNodeImage": OpenrouterNodeImage
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "OpenrouterNode": "OpenRouter Node"
+    "OpenrouterNodeImage": "OpenRouter Node with Image"
 }
