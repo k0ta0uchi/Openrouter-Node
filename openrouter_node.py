@@ -118,7 +118,11 @@ class OpenrouterNodeImage:
                     "multiline": False,
                     "default": ""
                 }),
-                "prompt": ("STRING", {
+                "system_prompt": ("STRING", {
+                    "multiline": True,
+                    "default": "A world without prompts"
+                }),
+                "user_prompt": ("STRING", {
                     "multiline": True,
                     "default": "A world without prompts"
                 }),
@@ -139,7 +143,7 @@ class OpenrouterNodeImage:
     FUNCTION = "get_completion"
     CATEGORY = "OpenRouter"
 
-    def get_completion(self, base_url, model, api_key, prompt, image_input, temperature):
+    def get_completion(self, base_url, model, api_key, system_prompt, user_prompt, image_input, temperature):
         try:
             headers = {
                 "Authorization": f"Bearer {api_key}",
@@ -148,13 +152,24 @@ class OpenrouterNodeImage:
 
             # Initialize messages with proper structure
             messages = [{
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": system_prompt
+                    }
+                ],
+                
+            },
+            {
                 "role": "user",
                 "content": [
                     {
                         "type": "text",
-                        "text": prompt
+                        "text": user_prompt
                     }
-                ]
+                ],
+                
             }]
 
             if image_input is not None:
